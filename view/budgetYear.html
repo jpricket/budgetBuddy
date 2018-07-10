@@ -1,0 +1,7 @@
+<html>
+    <h2>Budgets for {{.Year}}</h2>
+
+    {{range .Budgets}}
+    <div><a href="{{.URL}}">{{.Month}}</a></div>
+    {{end}}
+</html>

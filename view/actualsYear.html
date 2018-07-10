@@ -1,0 +1,7 @@
+<html>
+    <h2>Actuals for {{.Year}}</h2>
+
+    {{range .Actuals}}
+    <div><a href="{{.URL}}">{{.Month}}</a></div>
+    {{end}}
+</html>

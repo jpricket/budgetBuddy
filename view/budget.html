@@ -1,0 +1,136 @@
+<html>
+
+<style>
+<!--
+    .row_group {
+        font-size: 20pt;
+        padding-top: 20px;
+    }
+
+    .row_data {
+        font-size: 12pt;
+        text-align: left;
+    }
+
+    .row_data_number {
+        font-size: 12pt;
+        text-align: right;
+    }
+
+    .table_header {
+        font-size: 14pt;
+        text-align: left;
+    }
+
+    .hidden {
+        display: none;
+    }
+-->
+</style>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script>
+    function handleEnter() {
+        if (event.keyCode === 13) {
+            event.preventDefault();
+            return false;
+        }
+    }
+
+    function showDetails(group, item) {
+        alert(`${group}.${item}`);
+        event.preventDefault();
+        return false;
+    }
+
+    function saveData() {
+        $.ajax({
+            url: "/budgets",
+            type: "POST",
+            data: JSON.stringify(getTableData()),
+            contentType: "application/json; charset=utf-8",
+            success: function (result) {
+                alert("Data Saved");
+                $('#testDiv').text(result);
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+                alert(xhr.status);
+                alert(thrownError);
+            }
+        });
+    }
+
+    function getTableData() {
+        const month = "{{.Month}}";
+        const year = "{{.Year}}";
+        const groupsLookup = {};
+        const budgetItems = [];
+
+        const table = $("#items");
+        // Get all the groups into a dictionary
+        table.find('tr.group').each(function (i, el) {
+            const $tds = $(this).find('td');
+            const group = $tds.eq(0).text();
+            const incoming = $tds.eq(1).text();
+            groupsLookup[group] = {
+                name: group,
+                incoming: JSON.parse(incoming),
+                budgetItems: [] 
+            };
+        });
+        // Read all the data rows into their groups
+        table.find('tr.data').each(function (i, el) {
+            const $tds = $(this).find('td');
+            const group = $tds.eq(0).text();
+            const name = $tds.eq(1).text();
+            const budgetAmount = $tds.eq(2).text();
+            const actualAmount = $tds.eq(3).text();
+            groupsLookup[group].budgetItems.push({
+                name: name,
+                budgetAmount: parseFloat(budgetAmount),
+                actualAmount: parseFloat(actualAmount)
+            })
+        });
+
+        const budgetGroups = Object.values(groupsLookup);
+
+        $('#testDiv').text(JSON.stringify(budgetGroups));
+
+        return {
+            month: month,
+            year: parseInt(year),
+            budgetGroups: budgetGroups
+        };
+    }
+</script>
+
+<h2>Monthly Budget: {{.Month}}</h2>
+<table id="items" class="table table-hover">
+<thead>
+    <tr>
+        <th class="table_header hidden">Group</th>
+        <th class="table_header"></th>
+        <th class="table_header">Budget</th>
+        <th class="table_header">Actuals</th>
+    </tr>
+</thead>
+<tbody>
+    {{range .BudgetGroups}}{{$group := .Name}}
+        <tr class="group">
+            <td class="row_group" colspan="3">{{.Name}}</td>
+            <td class="row_group" style="display:none;">{{.Incoming}}</td>
+        </tr>
+        {{range .BudgetItems}}
+            <tr class="data" row_id="1">
+                <td class="hidden"><div class="row_data" col_name="group">{{$group}}</div></td>
+                <td><div class="row_data" col_name="name" contenteditable onkeydown="handleEnter()">{{.Name}}</div></td>
+                <td><div class="row_data_number" col_name="budget" contenteditable onkeydown="handleEnter()">{{.BudgetAmount}}</div></td>
+                <td><div class="row_data_number" col_name="actual"><a onclick="showDetails('{{$group}}', '{{.Name}}')" href="javascript:void(0);">{{.ActualAmount}}</a></div></td>
+            </tr>
+        {{end}}
+    {{end}}
+</tbody>
+</table>
+<button type="button" onclick="saveData()">Save</button>
+<p id="testDiv"></p>
+</html>
